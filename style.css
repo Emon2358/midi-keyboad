@@ -55,13 +55,20 @@ input[type="number"] {
     font-size: 16px;
 }
 
-.piano-roll-container {
+.score-container, .piano-roll-container {
     width: 100%;
     max-width: 90vw;
     overflow-x: auto;
     border: 1px solid #ccc;
     background-color: white;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.score-container {
+    padding: 10px;
+    box-sizing: border-box;
+    height: 150px; /* 譜面の高さを確保 */
+    margin-bottom: 5px;
 }
 
 #piano-roll {
@@ -95,17 +102,6 @@ input[type="number"] {
     background-color: #f8f9fa;
     border: 1px solid #eee;
     box-sizing: border-box;
-}
-
-.play-indicator {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 40px; /* cellの幅と合わせる */
-    height: 100%;
-    background-color: rgba(0, 123, 255, 0.3);
-    z-index: 10;
-    display: none; /* 初期状態では非表示 */
 }
 
 /* ローディング画面 */
