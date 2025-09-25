@@ -1,14 +1,166 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web MIDI Sequencer with Score</title>
-    <link rel="stylesheet" href="style.css">
+    <title>All-in-One Web MIDI Sequencer</title>
+    
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #444;
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #play-stop-button.playing {
+            background-color: #dc3545;
+        }
+
+        #play-stop-button.playing:hover {
+            background-color: #a71d2a;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        .text-input-area {
+            width: 100%;
+            max-width: 90vw;
+            margin-bottom: 20px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #text-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            resize: vertical;
+        }
+
+        #apply-text-button {
+            background-color: #28a745;
+        }
+
+        #apply-text-button:hover {
+            background-color: #218838;
+        }
+        
+        .score-container, .piano-roll-container {
+            width: 100%;
+            max-width: 90vw;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .score-container {
+            padding: 10px;
+            box-sizing: border-box;
+            height: 150px;
+            margin-bottom: 5px;
+        }
+        
+        #piano-roll {
+            display: grid;
+            border-collapse: collapse;
+        }
+
+        .cell {
+            width: 40px;
+            height: 25px;
+            border: 1px solid #eee;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+
+        .cell.active {
+            background-color: #fd7e14;
+        }
+
+        .cell.key-c {
+            border-top: 2px solid #ccc;
+        }
+
+        .cell-row-header {
+            width: 50px;
+            height: 25px;
+            text-align: right;
+            padding-right: 10px;
+            font-size: 12px;
+            color: #666;
+            background-color: #f8f9fa;
+            border: 1px solid #eee;
+            box-sizing: border-box;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            z-index: 1000;
+        }
+    </style>
 </head>
 <body>
     <h1>🎹 Web MIDI Sequencer</h1>
-    <p>クリックしてノートを打ち込み、メロディを作成しましょう！譜面もリアルタイムで表示されます。</p>
+    <p>クリックでの打ち込みのほか、下のエリアに「ドレミ」と文字で入力することもできます。</p>
 
     <div class="controls">
         <button id="play-stop-button">再生</button>
@@ -17,10 +169,15 @@
         <button id="download-midi-button">MIDIダウンロード</button>
     </div>
 
+    <div class="text-input-area">
+        <textarea id="text-input" rows="4" placeholder="ここに「ドレミファソラシ」と入力します。&#10;使える文字: ドレミファソラシ (ド# レbなどもOK)&#10;休符: 「休」または「、」&#10;伸ばし: 「ー」"></textarea>
+        <button id="apply-text-button">テキストをピアノロールに反映</button>
+    </div>
+    
     <div class="score-container" id="score-container">
         <div id="score"></div>
     </div>
-
+    
     <div class="piano-roll-container" id="piano-roll-container">
         <div id="piano-roll"></div>
     </div>
@@ -31,6 +188,252 @@
 
     <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.1.4/build/index.min.js"></script>
-    <script src="https://unpkg.com/vexflow/build/vexflow-min.js"></script> <script src="script.js"></script>
+    <script src="https://unpkg.com/vexflow/build/vexflow-min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 定数と変数の設定 ---
+            const NOTES = ['B5', 'A#5', 'A5', 'G#5', 'G5', 'F#5', 'F5', 'E5', 'D#5', 'D5', 'C#5', 'C5',
+                           'B4', 'A#4', 'A4', 'G#4', 'G4', 'F#4', 'F4', 'E4', 'D#4', 'D4', 'C#4', 'C4',
+                           'B3', 'A#3', 'A3', 'G#3', 'G3', 'F#3', 'F3', 'E3', 'D#3', 'D3', 'C#3', 'C3'];
+            const BEATS_PER_MEASURE = 16;
+            const NOTE_MAP = {
+                'ド': 'C4', 'ド#': 'C#4', 'ド♯': 'C#4',
+                'レb': 'C#4', 'レ♭': 'C#4', 'レ': 'D4', 'レ#': 'D#4', 'レ♯': 'D#4',
+                'ミb': 'D#4', 'ミ♭': 'D#4', 'ミ': 'E4',
+                'ファ': 'F4', 'ファ#': 'F#4', 'ファ♯': 'F#4',
+                'ソb': 'F#4', 'ソ♭': 'F#4', 'ソ': 'G4', 'ソ#': 'G#4', 'ソ♯': 'G#4',
+                'ラb': 'G#4', 'ラ♭': 'G#4', 'ラ': 'A4', 'ラ#': 'A#4', 'ラ♯': 'A#4',
+                'シb': 'A#4', 'シ♭': 'A#4', 'シ': 'B4',
+                '高いド': 'C5'
+            };
+
+            // --- DOM要素の取得 ---
+            const pianoRoll = document.getElementById('piano-roll');
+            const playStopButton = document.getElementById('play-stop-button');
+            const bpmInput = document.getElementById('bpm');
+            const downloadMidiButton = document.getElementById('download-midi-button');
+            const loadingScreen = document.getElementById('loading-screen');
+            const scoreDiv = document.getElementById('score');
+            const pianoRollContainer = document.getElementById('piano-roll-container');
+            const scoreContainer = document.getElementById('score-container');
+            const textInput = document.getElementById('text-input');
+            const applyTextButton = document.getElementById('apply-text-button');
+
+            // --- 状態変数 ---
+            let numBeats = BEATS_PER_MEASURE * 2;
+            let sampler;
+            let sequence;
+            let gridData = Array(NOTES.length).fill(null).map(() => Array(numBeats).fill(false));
+            let isAddingMeasure = false;
+
+            // --- VexFlowのセットアップ ---
+            const { Factory, StaveNote, Formatter } = Vex.Flow;
+            let vf;
+
+            // --- メイン処理 ---
+            initialize();
+
+            function initialize() {
+                sampler = new Tone.Sampler({
+                    urls: { 'C4': 'C4.mp3', 'D#4': 'Ds4.mp3', 'F#4': 'Fs4.mp3', 'A4': 'A4.mp3' },
+                    release: 1,
+                    baseUrl: 'https://tonejs.github.io/audio/salamander/',
+                    onload: () => {
+                        loadingScreen.style.display = 'none';
+                        console.log('ピアノ音源の読み込みが完了しました。');
+                    }
+                }).toDestination();
+                buildUI();
+                setupEventListeners();
+            }
+            
+            function buildUI() {
+                pianoRoll.innerHTML = '';
+                scoreDiv.innerHTML = '';
+                pianoRoll.style.gridTemplateColumns = `50px repeat(${numBeats}, 40px)`;
+                
+                for (let i = 0; i < NOTES.length; i++) {
+                    const noteName = document.createElement('div');
+                    noteName.classList.add('cell-row-header');
+                    noteName.textContent = NOTES[i].replace('#', '♯');
+                    pianoRoll.appendChild(noteName);
+                    for (let j = 0; j < numBeats; j++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell');
+                        if (NOTES[i].startsWith('C')) cell.classList.add('key-c');
+                        if (gridData[i][j]) cell.classList.add('active');
+                        cell.dataset.row = i;
+                        cell.dataset.col = j;
+                        pianoRoll.appendChild(cell);
+                    }
+                }
+                drawScore();
+            }
+            
+            function setupEventListeners() {
+                pianoRoll.addEventListener('click', (event) => {
+                    if (!event.target.classList.contains('cell')) return;
+                    const row = event.target.dataset.row;
+                    const col = event.target.dataset.col;
+                    gridData[row][col] = !gridData[row][col];
+                    event.target.classList.toggle('active', gridData[row][col]);
+                    if (gridData[row][col]) sampler.triggerAttack(NOTES[row]);
+                    drawScore();
+                });
+
+                playStopButton.addEventListener('click', async () => {
+                    if (Tone.context.state !== 'running') await Tone.start();
+                    Tone.Transport.state === 'started' ? stopPlayback() : startPlayback();
+                });
+                
+                bpmInput.addEventListener('change', () => { Tone.Transport.bpm.value = parseInt(bpmInput.value); });
+                downloadMidiButton.addEventListener('click', downloadMidi);
+                
+                pianoRollContainer.addEventListener('scroll', () => {
+                    scoreContainer.scrollLeft = pianoRollContainer.scrollLeft;
+                    if (pianoRollContainer.scrollLeft + pianoRollContainer.clientWidth >= pianoRollContainer.scrollWidth - 100) {
+                        addMeasure();
+                    }
+                });
+                scoreContainer.addEventListener('scroll', () => { pianoRollContainer.scrollLeft = scoreContainer.scrollLeft; });
+
+                applyTextButton.addEventListener('click', parseAndApplyText);
+            }
+            
+            function parseAndApplyText() {
+                const text = textInput.value;
+                const tokens = text.match(/(ド[#♯]?|レ[b♭]?|ミ[b♭]?|ファ[#♯]?|ソ[b♭♯#]?|ラ[b♭♯#]?|シ[b♭]?|高いド|休|ー|、|,)/g) || [];
+
+                while(tokens.length > numBeats) {
+                    addMeasure(false);
+                }
+
+                gridData = Array(NOTES.length).fill(null).map(() => Array(numBeats).fill(false));
+                
+                let currentBeat = 0;
+                tokens.forEach(token => {
+                    if (currentBeat >= numBeats) return;
+                    const noteName = NOTE_MAP[token];
+                    if (noteName) {
+                        const rowIndex = NOTES.indexOf(noteName);
+                        if (rowIndex > -1) {
+                            gridData[rowIndex][currentBeat] = true;
+                        }
+                    }
+                    currentBeat++;
+                });
+                
+                buildUI();
+            }
+
+            function addMeasure(rebuild = true) {
+                if (isAddingMeasure) return;
+                isAddingMeasure = true;
+                
+                numBeats += BEATS_PER_MEASURE;
+                gridData.forEach(row => {
+                    for(let i = 0; i < BEATS_PER_MEASURE; i++) row.push(false);
+                });
+                
+                if (rebuild) {
+                    const currentScroll = pianoRollContainer.scrollLeft;
+                    buildUI();
+                    pianoRollContainer.scrollLeft = currentScroll;
+                }
+                
+                setTimeout(() => { isAddingMeasure = false; }, 100);
+            }
+
+            function drawScore() {
+                if (vf) vf.getContext().clear();
+                vf = new Factory({ renderer: { elementId: 'score', width: 40 * numBeats + 100, height: 150 } });
+                const staveWidth = 40 * BEATS_PER_MEASURE;
+                let x = 10;
+                
+                for (let measure = 0; measure < numBeats / BEATS_PER_MEASURE; measure++) {
+                    const stave = vf.Stave(x, 20, staveWidth);
+                    if (measure === 0) stave.addClef("treble").addTimeSignature("4/4");
+                    stave.setContext(vf.getContext()).draw();
+                    
+                    const notesForMeasure = [];
+                    const startBeat = measure * BEATS_PER_MEASURE;
+                    
+                    for (let col = startBeat; col < startBeat + BEATS_PER_MEASURE; col++) {
+                        const activeNotes = [];
+                        for (let row = 0; row < NOTES.length; row++) {
+                            if (gridData[row][col]) {
+                                const note = NOTES[row].toLowerCase().replace('#', '#/').slice(0,-1) + '/' + NOTES[row].slice(-1);
+                                activeNotes.push(note);
+                            }
+                        }
+                        
+                        if (activeNotes.length > 0) {
+                            notesForMeasure.push(new StaveNote({ keys: activeNotes, duration: "16" }));
+                        } else {
+                            notesForMeasure.push(new StaveNote({ keys: ["b/4"], duration: "16r" }));
+                        }
+                    }
+                    Formatter.FormatAndDraw(vf.getContext(), stave, notesForMeasure);
+                    x += staveWidth;
+                }
+            }
+
+            function startPlayback() {
+                const events = [];
+                for (let col = 0; col < numBeats; col++) {
+                    const notesAtThisBeat = [];
+                    for (let row = 0; row < NOTES.length; row++) {
+                        if (gridData[row][col]) notesAtThisBeat.push(NOTES[row]);
+                    }
+                    if (notesAtThisBeat.length > 0) {
+                        const time = `${Math.floor(col / BEATS_PER_MEASURE)}:${Math.floor((col % BEATS_PER_MEASURE) / 4)}:${col % 4}`;
+                        events.push({ time: time, notes: notesAtThisBeat });
+                    }
+                }
+                if (sequence) sequence.dispose();
+                sequence = new Tone.Part((time, value) => {
+                    sampler.triggerAttackRelease(value.notes, '16n', time);
+                }, events).start(0);
+                sequence.loop = true;
+                sequence.loopEnd = `${Math.floor(numBeats / BEATS_PER_MEASURE)}m`;
+                Tone.Transport.bpm.value = parseInt(bpmInput.value);
+                Tone.Transport.start();
+                playStopButton.textContent = '停止';
+                playStopButton.classList.add('playing');
+            }
+
+            function stopPlayback() {
+                Tone.Transport.stop();
+                if (sequence) sequence.stop();
+                playStopButton.textContent = '再生';
+                playStopButton.classList.remove('playing');
+            }
+
+            function downloadMidi() {
+                const writer = new MidiWriter.Writer();
+                const track = new MidiWriter.Track();
+                writer.addTrack(track);
+                track.addEvent(new MidiWriter.ProgramChangeEvent({instrument: 1}));
+                for (let col = 0; col < numBeats; col++) {
+                    const notesAtThisBeat = [];
+                    for (let row = 0; row < NOTES.length; row++) {
+                        if (gridData[row][col]) notesAtThisBeat.push(NOTES[row]);
+                    }
+                    if (notesAtThisBeat.length > 0) {
+                        track.addEvent(new MidiWriter.NoteEvent({
+                            pitch: notesAtThisBeat,
+                            duration: '16',
+                            startTick: col * (MidiWriter.constants.TPQ / 4)
+                        }));
+                    }
+                }
+                const link = document.createElement('a');
+                link.href = writer.dataUri();
+                link.download = 'melody.mid';
+                link.click();
+            }
+        });
+    </script>
 </body>
 </html>
