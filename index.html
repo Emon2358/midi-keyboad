@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web MIDI Sequencer</title>
+    <title>Web MIDI Sequencer with Score</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>🎹 Web MIDI Sequencer</h1>
-    <p>クリックしてノートを打ち込み、メロディを作成しましょう！</p>
+    <p>クリックしてノートを打ち込み、メロディを作成しましょう！譜面もリアルタイムで表示されます。</p>
 
     <div class="controls">
         <button id="play-stop-button">再生</button>
@@ -17,7 +17,11 @@
         <button id="download-midi-button">MIDIダウンロード</button>
     </div>
 
-    <div class="piano-roll-container">
+    <div class="score-container" id="score-container">
+        <div id="score"></div>
+    </div>
+
+    <div class="piano-roll-container" id="piano-roll-container">
         <div id="piano-roll"></div>
     </div>
 
@@ -27,6 +31,6 @@
 
     <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.1.4/build/index.min.js"></script>
-    <script src="script.js"></script>
+    <script src="https://unpkg.com/vexflow/build/vexflow-min.js"></script> <script src="script.js"></script>
 </body>
 </html>
