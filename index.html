@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web MIDI Sequencer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>🎹 Web MIDI Sequencer</h1>
+    <p>クリックしてノートを打ち込み、メロディを作成しましょう！</p>
+
+    <div class="controls">
+        <button id="play-stop-button">再生</button>
+        <label for="bpm">BPM:</label>
+        <input type="number" id="bpm" value="120" min="40" max="240">
+        <button id="download-midi-button">MIDIダウンロード</button>
+    </div>
+
+    <div class="piano-roll-container">
+        <div id="piano-roll"></div>
+    </div>
+
+    <div class="loading" id="loading-screen">
+        <p>ピアノ音源を読み込んでいます...</p>
+    </div>
+
+    <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.1.4/build/index.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
