@@ -1,0 +1,124 @@
+body {
+    font-family: sans-serif;
+    background-color: #f0f0f0;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    color: #444;
+}
+
+.controls {
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+button {
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#play-stop-button.playing {
+    background-color: #dc3545;
+}
+
+#play-stop-button.playing:hover {
+    background-color: #a71d2a;
+}
+
+input[type="number"] {
+    width: 60px;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+.piano-roll-container {
+    width: 100%;
+    max-width: 90vw;
+    overflow-x: auto;
+    border: 1px solid #ccc;
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#piano-roll {
+    display: grid;
+    border-collapse: collapse;
+}
+
+.cell {
+    width: 40px;
+    height: 25px;
+    border: 1px solid #eee;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.cell.active {
+    background-color: #fd7e14;
+}
+
+.cell.key-c {
+    border-top: 2px solid #ccc;
+}
+
+.cell-row-header {
+    width: 50px;
+    height: 25px;
+    text-align: right;
+    padding-right: 10px;
+    font-size: 12px;
+    color: #666;
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    box-sizing: border-box;
+}
+
+.play-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px; /* cellの幅と合わせる */
+    height: 100%;
+    background-color: rgba(0, 123, 255, 0.3);
+    z-index: 10;
+    display: none; /* 初期状態では非表示 */
+}
+
+/* ローディング画面 */
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2em;
+    z-index: 1000;
+}
